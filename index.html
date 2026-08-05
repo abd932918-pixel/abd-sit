@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة المشاريع والتطبيقات</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            font-family: 'Cairo', sans-serif;
+        }
+        body {
+            background-color: #090d16;
+            color: #f1f5f9;
+        }
+        /* خلفية شبكية متدرجة */
+        .bg-grid {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        }
+        /* تأثير الزجاج */
+        .glass-card {
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-card:hover {
+            border-color: rgba(99, 102, 241, 0.4);
+            box-shadow: 0 10px 30px -10px rgba(79, 70, 229, 0.2);
+        }
+        .glow-effect {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(99,102,241,0.15) 0%, rgba(0,0,0,0) 70%);
+            top: -100px;
+            right: 50%;
+            transform: translateX(50%);
+            z-index: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between bg-grid relative overflow-x-hidden">
+
+    <div class="glow-effect"></div>
+
+    <header class="sticky top-0 z-50 glass-card border-b border-slate-800/80">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex justify-between items-center">
+            
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                    <i data-lucide="box" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">
+                        معرض المشاريع
+                    </h1>
+                    <span class="text-[10px] text-indigo-400 font-semibold tracking-widest block -mt-1">NEXUS STORE</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <div id="server-status" class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/80 border border-slate-800 text-xs text-slate-400">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span id="status-label">متصل بالسيرفر</span>
+                </div>
+
+                <button onclick="fetchProducts()" class="flex items-center gap-2 bg-indigo-600/10 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 active:scale-95">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    <span class="hidden sm:inline">تحديث</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-grow w-full z-10">
+        
+        <div class="text-center max-w-2xl mx-auto mb-10">
+            <h2 class="text-3xl sm:text-4xl font-extrabold text-white mb-3">حمل أحدث التطبيقات والملفات</h2>
+            <p class="text-slate-400 text-sm sm:text-base mb-6">منصة سريعة ومحدثة تلقائياً لعرض وإعادة تنزيل المشاريع والبرامج المرفوعة من البوت مباشرة.</p>
+            
+            <div class="relative max-w-md mx-auto">
+                <i data-lucide="search" class="w-5 h-5 absolute right-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                <input type="text" id="search-input" oninput="handleSearch()" placeholder="ابحث عن تطبيق أو ملف..." class="w-full bg-slate-900/90 border border-slate-800 rounded-2xl py-3 pr-12 pl-4 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-all">
+            </div>
+        </div>
+
+        <div class="flex flex-wrap gap-2.5 mb-10 justify-center" id="category-filters">
+            <button onclick="filterCategory('all')" class="cat-btn active bg-indigo-600 text-white px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all shadow-lg shadow-indigo-600/20">الكل</button>
+            <button onclick="filterCategory('mobile')" class="cat-btn bg-slate-900/80 hover:bg-slate-800 text-slate-400 border border-slate-800 px-5 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all flex items-center gap-1.5"><i data-lucide="smartphone" class="w-4 h-4"></i> تطبيقات جوال</button>
+            <button onclick="filterCategory('desktop')" class="cat-btn bg-slate-900/80 hover:bg-slate-800 text-slate-400 border border-slate-800 px-5 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all flex items-center gap-1.5"><i data-lucide="monitor" class="w-4 h-4"></i> برامج حاسوب</button>
+            <button onclick="filterCategory('game')" class="cat-btn bg-slate-900/80 hover:bg-slate-800 text-slate-400 border border-slate-800 px-5 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all flex items-center gap-1.5"><i data-lucide="gamepad-2" class="w-4 h-4"></i> ألعاب</button>
+            <button onclick="filterCategory('tool')" class="cat-btn bg-slate-900/80 hover:bg-slate-800 text-slate-400 border border-slate-800 px-5 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all flex items-center gap-1.5"><i data-lucide="wrench" class="w-4 h-4"></i> أدوات وملحقات</button>
+        </div>
+
+        <div id="products-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            </div>
+
+        <div id="status-message" class="text-center py-20 hidden">
+            <div id="loading-spinner" class="inline-block w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p class="text-slate-400 text-base font-medium" id="status-text">جاري جلب المشاريع...</p>
+        </div>
+
+    </main>
+
+    <footer class="border-t border-slate-800/60 bg-slate-950/60 py-6 text-center text-slate-500 text-xs">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <p>© 2026 جميع الحقوق محفوظة — تم إنشاء المنصة بواسطة الذكاء الاصطناعي</p>
+            <p class="flex items-center gap-1">
+                <span>تدار بواسطة بوت التلجرام</span>
+                <i data-lucide="send" class="w-3.5 h-3.5 text-indigo-400"></i>
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        const API_URL = 'https://my-bot-server-71r1.onrender.com/api/products';
+        let allProducts = [];
+        let currentCategory = 'all';
+        let searchQuery = '';
+
+        lucide.createIcons();
+
+        // جلب المشاريع من خادم API
+        async function fetchProducts() {
+            const grid = document.getElementById('products-grid');
+            const statusMsg = document.getElementById('status-message');
+            const statusText = document.getElementById('status-text');
+            const spinner = document.getElementById('loading-spinner');
+
+            grid.innerHTML = '';
+            statusMsg.classList.remove('hidden');
+            spinner.classList.remove('hidden');
+            statusText.innerText = 'جاري جلب المشاريع من السيرفر...';
+
+            try {
+                const response = await fetch(API_URL);
+                const data = await response.json();
+
+                if (data.status === 'success' && data.products.length > 0) {
+                    allProducts = data.products;
+                    statusMsg.classList.add('hidden');
+                    renderProducts();
+                } else {
+                    spinner.classList.add('hidden');
+                    statusText.innerText = '📭 لا توجد مشاريع مضافة حالياً.';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                spinner.classList.add('hidden');
+                statusText.innerHTML = '<span class="text-rose-400">⚠️ تعذر الاتصال بالسيرفر.</span><br><span class="text-xs text-slate-500">تأكد من تشغيل ملف البوت (Python) على الجهاز.</span>';
+            }
+        }
+
+        // عرض المشاريع وتطبيق التصفية والبحث
+        function renderProducts() {
+            const grid = document.getElementById('products-grid');
+            grid.innerHTML = '';
+
+            let filtered = allProducts;
+
+            // تصفية حسب التصنيف
+            if (currentCategory !== 'all') {
+                filtered = filtered.filter(p => p.category === currentCategory);
+            }
+
+            // تصفية حسب البحث
+            if (searchQuery.trim() !== '') {
+                filtered = filtered.filter(p => 
+                    p.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                    (p.desc && p.desc.toLowerCase().includes(searchQuery.toLowerCase()))
+                );
+            }
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full text-center py-16 text-slate-500">
+                        <i data-lucide="folder-open" class="w-12 h-12 mx-auto mb-3 stroke-1 text-slate-600"></i>
+                        <p class="text-base font-medium">لم يتم العثور على أي نتائج مطابقة.</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            filtered.forEach(product => {
+                const card = document.createElement('div');
+                card.className = 'glass-card rounded-2xl overflow-hidden transition-all duration-300 flex flex-col justify-between group';
+
+                // تجهيز أسماء التصنيفات باللغة العربية
+                const catNames = {
+                    mobile: 'تطبيق جوال',
+                    desktop: 'برنامج حاسوب',
+                    game: 'لعبة',
+                    tool: 'أداة / ملحق'
+                };
+
+                card.innerHTML = `
+                    <div>
+                        <div class="h-48 overflow-hidden relative bg-slate-950">
+                            <img src="${product.image}" alt="${product.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent"></div>
+                            
+                            <span class="absolute top-3 right-3 bg-slate-900/80 backdrop-blur border border-slate-700/50 text-indigo-300 text-[11px] font-bold px-2.5 py-1 rounded-lg">
+                                ${product.version || 'v1.0'}
+                            </span>
+
+                            <span class="absolute bottom-3 right-3 text-xs text-slate-300 bg-indigo-950/70 backdrop-blur px-2.5 py-1 rounded-md border border-indigo-500/30">
+                                ${catNames[product.category] || product.category}
+                            </span>
+                        </div>
+
+                        <div class="p-5">
+                            <h3 class="text-lg font-bold text-white mb-2 group-hover:text-indigo-300 transition-colors">${product.title}</h3>
+                            <p class="text-slate-400 text-xs sm:text-sm leading-relaxed mb-4 line-clamp-3">${product.desc || 'لا يوجد وصف متاح.'}</p>
+                        </div>
+                    </div>
+
+                    <div class="px-5 pb-5 pt-0 flex justify-between items-center gap-3 border-t border-slate-800/40 mt-auto pt-4">
+                        <div class="flex flex-col">
+                            <span class="text-[10px] text-slate-500">تاريخ النشر</span>
+                            <span class="text-xs text-slate-400 font-medium flex items-center gap-1">
+                                <i data-lucide="calendar" class="w-3 h-3 text-slate-500"></i>
+                                ${product.date || 'غير محدد'}
+                            </span>
+                        </div>
+
+                        <a href="${product.fileUrl}" target="_blank" download class="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-600/20 active:scale-95">
+                            <i data-lucide="download" class="w-4 h-4"></i>
+                            <span>تحميل</span>
+                        </a>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            lucide.createIcons();
+        }
+
+        // فلترة التصنيفات
+        function filterCategory(category) {
+            currentCategory = category;
+            
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.className = 'cat-btn bg-slate-900/80 hover:bg-slate-800 text-slate-400 border border-slate-800 px-5 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all flex items-center gap-1.5';
+            });
+
+            event.currentTarget.className = 'cat-btn active bg-indigo-600 text-white px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all shadow-lg shadow-indigo-600/20 flex items-center gap-1.5';
+
+            renderProducts();
+        }
+
+        // البحث التفاعلي
+        function handleSearch() {
+            searchQuery = document.getElementById('search-input').value;
+            renderProducts();
+        }
+
+        // تشغيل الجلب عند بداية فتح الصفحة
+        window.onload = fetchProducts;
+    </script>
+</body>
+</html>

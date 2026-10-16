@@ -171,6 +171,11 @@ select option{background:var(--card-solid);color:var(--txt)}
 .dl:hover::after{left:150%}
 .dl:hover{transform:translateY(-2px)}
 .dl:active{transform:scale(.94)}
+.dl.off{background:var(--soft);color:var(--muted);box-shadow:none;cursor:not-allowed;border:1px solid var(--line)}
+.dl.off:hover{transform:none}
+.tag.f{bottom:14px;left:14px;background:rgba(34,211,238,.28);border:1px solid rgba(255,255,255,.25);letter-spacing:.05em}
+.note{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:14px;margin-bottom:16px;background:rgba(34,211,238,.08);border:1px solid rgba(34,211,238,.3);color:var(--muted);font-size:13px}
+.note svg{color:var(--p2);margin-top:4px}
  
 /* ===== Skeleton / states ===== */
 .sk{border-radius:var(--r);height:400px;border:1px solid var(--line);background:linear-gradient(100deg,var(--soft) 30%,var(--line) 50%,var(--soft) 70%);background-size:300% 100%;animation:sk 1.4s infinite}
@@ -365,7 +370,36 @@ let allProducts = [], currentCategory = 'all', searchQuery = '', sortMode = 'new
 const $ = id => document.getElementById(id);
 const icon = (n, c = '') => `<svg class="${c}"><use href="#${n}"/></svg>`;
 const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-const safeUrl = u => /^https?:\/\//i.test(u || '') ? u : '#';
+const API_ORIGIN = new URL(API_URL).origin;
+/* يحوّل الرابط النسبي (مثل /uploads/app.zip) إلى رابط كامل على سيرفر Render، ويرفض غير http/https */
+const safeUrl = u => {
+  if (!u || typeof u !== 'string') return '';
+  try { const x = new URL(u.trim(), API_ORIGIN + '/'); return /^https?:$/.test(x.protocol) ? x.href : ''; }
+  catch (e) { return ''; }
+};
+/* أنواع الملفات المدعومة */
+const FILE_TYPES = {
+  apk:  { label: 'APK',  note: 'تطبيق أندرويد: فعّل «التثبيت من مصادر غير معروفة» ثم ثبّته.' },
+  apks: { label: 'APKS', note: 'حزمة أندرويد مقسّمة: تحتاج مثبّتاً مثل SAI (Split APKs Installer).' },
+  xapk: { label: 'XAPK', note: 'حزمة أندرويد مع بيانات إضافية: تحتاج مثبّتاً مثل SAI أو APKCombo Installer.' },
+  exe:  { label: 'EXE',  note: 'برنامج ويندوز: شغّله بعد التحميل (قد يظهر تحذير SmartScreen، اختر «تشغيل على أي حال»).' },
+  zip:  { label: 'ZIP',  note: 'ملف مضغوط: فك الضغط بعد التحميل.' }
+};
+const fileExt = p => {
+  for (const c of [p.fileName, p.file_name, p.filename, p.fileUrl]) {
+    if (!c || typeof c !== 'string') continue;
+    const m = c.split(/[?#]/)[0].match(/\.([a-z0-9]{2,5})$/i);
+    if (m) return m[1].toLowerCase();
+  }
+  return '';
+};
+const fileType = p => { const e = fileExt(p); return FILE_TYPES[e] || (e ? { label: e.toUpperCase(), note: '' } : null); };
+const dlBtn = (p, label) => {
+  const u = safeUrl(p.fileUrl), ft = fileType(p);
+  return u
+    ? `<a class="dl" href="${esc(u)}" target="_blank" rel="noopener" download>${icon('i-down')}<span>${label}${ft ? ' ' + esc(ft.label) : ''}</span></a>`
+    : `<span class="dl off">${icon('i-alert')}<span>الملف غير متوفر</span></span>`;
+};
  
 /* ===== Theme ===== */
 function applyTheme(t) {
@@ -449,7 +483,7 @@ function getFiltered() {
   else if (sortMode === 'old') list.reverse();
   return list;
 }
-const img = p => `<img src="${esc(safeUrl(p.image))}" alt="${esc(p.title)}" loading="lazy" onerror="this.remove()">`;
+const img = p => safeUrl(p.image) ? `<img src="${esc(safeUrl(p.image))}" alt="${esc(p.title)}" loading="lazy" onerror="this.remove()">` : '';
  
 function render() {
   const grid = $('products-grid'), list = getFiltered();
@@ -466,12 +500,13 @@ function render() {
         <div class="ph">${icon(c.icon)}</div>${img(p)}
         <span class="tag v">${esc(p.version || 'v1.0')}</span>
         <span class="tag c">${icon(c.icon)} ${esc(c.name)}</span>
+        ${fileType(p) ? `<span class="tag f">${esc(fileType(p).label)}</span>` : ''}
         ${isNew ? `<span class="tag n">${icon('i-fire')} جديد</span>` : ''}
       </div>
       <div class="body"><h3>${esc(p.title)}</h3><p>${esc(p.desc || 'لا يوجد وصف متاح.')}</p></div>
       <div class="foot">
         <span class="date">${icon('i-cal')} ${esc(p.date || 'غير محدد')}</span>
-        <a class="dl" href="${esc(safeUrl(p.fileUrl))}" target="_blank" rel="noopener" download>${icon('i-down')}<span>تحميل</span></a>
+        ${dlBtn(p, 'تحميل')}
       </div>
     </article>`;
   }).join('');
@@ -484,9 +519,10 @@ function openModal(idx) {
   $('sheet').innerHTML = `
     <div class="hd"><button class="x" onclick="closeModal()" aria-label="إغلاق">${icon('i-x')}</button>${img(p)}</div>
     <div class="in"><h3>${esc(p.title)}</h3>
-      <div class="meta"><span>${esc(c.name)}</span><span>${esc(p.version || 'v1.0')}</span><span>${esc(p.date || 'غير محدد')}</span></div>
+      <div class="meta"><span>${esc(c.name)}</span><span>${esc(p.version || 'v1.0')}</span><span>${esc(p.date || 'غير محدد')}</span>${fileType(p) ? `<span>${esc(fileType(p).label)}</span>` : ''}</div>
       <p>${esc(p.desc || 'لا يوجد وصف متاح.')}</p>
-      <a class="dl" href="${esc(safeUrl(p.fileUrl))}" target="_blank" rel="noopener" download>${icon('i-down')}<span>تحميل الآن</span></a>
+      ${fileType(p) && fileType(p).note ? `<div class="note">${icon('i-spark')}<span>${esc(fileType(p).note)}</span></div>` : ''}
+      ${dlBtn(p, 'تحميل الآن')}
     </div>`;
   $('modal').classList.add('open'); document.body.style.overflow = 'hidden';
 }
